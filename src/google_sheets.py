@@ -69,6 +69,18 @@ def generate_cooldown(request: bool = False):
     return cooldown
 
 
+async def _ensure_connected(client: TelegramClient, attempts: int = 3):
+    """Ensure Telethon client connection is alive."""
+    for _ in range(attempts):
+        try:
+            await client.connect()
+            return
+        except Exception:
+            await asyncio.sleep(1)
+    # best effort; Telethon usually reconnects itself later
+    return
+
+
 def get_phone_numbers_and_birthdate_from_html(target_fullname: str, html_file_name: str):
     target_fullname_norm = re.sub(r'\s+', ' ', target_fullname.lower().strip())
 
@@ -153,10 +165,29 @@ async def get_phone_numbers_raw_inn(
     logger.debug(f"Поиск номера по ИНН: /raw {inn}")
 
     try:
-        await client.send_message(chat, f"/raw {inn}")
+        # make sure we are connected before sending
+        await _ensure_connected(client)
+
+        # send command with simple retries on transient disconnects
+        for attempt in range(3):
+            try:
+                await client.send_message(chat, f"/raw {inn}")
+                break
+            except ConnectionError:
+                logger.warning("Соединение потеряно при отправке /raw, пробую переподключиться...")
+                await _ensure_connected(client)
+                await asyncio.sleep(2)
         await asyncio.sleep(generate_cooldown())
 
-        last_messages = await client.get_messages(chat, 2)
+        # fetch messages with retry as well
+        for attempt in range(3):
+            try:
+                last_messages = await client.get_messages(chat, 2)
+                break
+            except ConnectionError:
+                logger.warning("Соединение потеряно при получении сообщений, переподключение...")
+                await _ensure_connected(client)
+                await asyncio.sleep(2)
         check = check_limit(last_messages)
         if check:
             return {
@@ -233,10 +264,27 @@ async def get_phone_numbers_fio_dr(
     logger.debug(f"Поиск номера по ФИО + ДР: {fio} {birthday}")
 
     try:
-        await client.send_message(chat, f"{fio} {birthday}")
+        await _ensure_connected(client)
+
+        for attempt in range(3):
+            try:
+                await client.send_message(chat, f"{fio} {birthday}")
+                break
+            except ConnectionError:
+                logger.warning("Соединение потеряно при отправке ФИО+ДР, переподключение...")
+                await _ensure_connected(client)
+                await asyncio.sleep(2)
+
         await asyncio.sleep(generate_cooldown())
 
-        last_messages = await client.get_messages(chat, 2)
+        for attempt in range(3):
+            try:
+                last_messages = await client.get_messages(chat, 2)
+                break
+            except ConnectionError:
+                logger.warning("Соединение потеряно при получении сообщений (ФИО+ДР), переподключение...")
+                await _ensure_connected(client)
+                await asyncio.sleep(2)
         check = check_limit(last_messages)
         if check:
             return check
