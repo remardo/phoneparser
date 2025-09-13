@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual envs
+.venv/
+venv/
+
+# Logs & archives
+src/logs.log
+src/*.log
+src/logs.*.log.zip
+
+# Telegram sessions and local state
+*.session
+*.session-journal
+sessions.json
+src/sessions.json
+
+# Google Service Account keys (all locations)
+**/service-acount-sheets.json
+
+# Editors/OS
+.vscode/
+*.code-workspace
+.DS_Store
