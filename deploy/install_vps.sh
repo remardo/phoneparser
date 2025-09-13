@@ -162,7 +162,7 @@ fi
 log "Install complete."
 cat <<MSG
 Next steps:
-  1) Upload your Telegram .session files into $APP_DIR (repo root).
+  1) Upload your Telegram .session files into $APP_DIR/sessions (folder will be created on first run) or let the app create new ones.
   2) Place Google SA key at $APP_DIR/src/service-acount-sheets.json
      (or export SA_JSON_B64 and re-run this script to auto-provision)
   3) Edit $APP_DIR/src/sessions.json with your API creds.

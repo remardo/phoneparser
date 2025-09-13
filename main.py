@@ -1,4 +1,5 @@
 import asyncio
+import os
 import random
 
 from telethon import TelegramClient
@@ -15,8 +16,11 @@ async def main():
 
         for session_name, items in sessions.items():
             logger.info(f"Подключение к {session_name} | всего сессий [{len(sessions)}]")
+            # Ensure dedicated sessions directory exists and use it for .session files
+            os.makedirs("sessions", exist_ok=True)
+            session_path = os.path.join("sessions", session_name)
 
-            client = TelegramClient(session_name, items[0], items[1], system_version="4.16.30-vxCUSTOM")
+            client = TelegramClient(session_path, items[0], items[1], system_version="4.16.30-vxCUSTOM")
             async with client:
                 chat_entity = await client.get_entity(BOT_USERNAME)
                 try:
